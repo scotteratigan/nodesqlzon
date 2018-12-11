@@ -1,0 +1,29 @@
+{
+  "name": "nodesqlzon",
+  "version": "1.0.0",
+  "description": "'Storefront' using node/sql.",
+  "main": "index.js",
+  "scripts": {
+    "test": "help"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scotteratigan/nodesqlzon.git"
+  },
+  "keywords": [
+    "SQL",
+    "Node.js"
+  ],
+  "author": "Scott Ratigan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/scotteratigan/nodesqlzon/issues"
+  },
+  "homepage": "https://github.com/scotteratigan/nodesqlzon#readme",
+  "dependencies": {
+    "easy-table": "^1.1.1",
+    "inquirer": "^6.2.1",
+    "mysql": "^2.16.0",
+    "numeral": "^2.0.6"
+  }
+}
