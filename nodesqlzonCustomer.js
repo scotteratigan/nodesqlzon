@@ -2,7 +2,6 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const Table = require('easy-table');
 
-const query = 'SELECT * FROM products';
 const connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -10,11 +9,6 @@ const connection = mysql.createConnection({
     password: "hunter2!",
     database: "bamazon"
 });
-const currencyDollarFormatter = new Intl.NumberFormat('en-US', {
-	style: 'currency',
-	currency: 'USD',
-	minimumFractionDigits: 2
-  });
 let productArray = [];
 
 displayProducts();
@@ -22,18 +16,19 @@ displayProducts();
 function connectToDB() {
     connection.connect(function(err) {
         if (err) throw err;
-		//console.log("connected as id " + connection.threadId);
+		console.log("connected as id " + connection.threadId);
     });
 }
 
 function disconnectDB() {
 	connection.end();
+	console.log('Discoed');
 }
 
 function displayProducts() {
 	connectToDB();
 	console.log('*** Welcome to NodeSQLzon! ***');
-    connection.query(query, function(err, res, fields) {  
+    connection.query('SELECT * FROM products', function(err, res, fields) {  
         if (err) throw err;
 		else if (res.length > 0) {
 			res.forEach((product) => productArray.push(product) );
@@ -50,10 +45,11 @@ function displayProducts() {
 		}
         else console.log('Sold out of all items! Please come back soon.');
 	});
-	disconnectDB();
+	//
 }
 
 function promptToBuyProduct() {
+	let idToPurchase, itemToPurchase, maxQuantity, price, quantity;
 	inquirer.prompt([{
 		name: 'id',
 		type: 'input',
@@ -62,11 +58,10 @@ function promptToBuyProduct() {
 			return (!isNaN(itemId) && itemId > 0 && itemId <= productArray.length); // todo: ensure number is in range.
 		}
 	}]).then( (purchase) => {
-		//console.log('Purchasing', purchase.id);
-		const itemToPurchase = productArray[purchase.id - 1].product_name;
-		const maxQuantity = parseInt(productArray[purchase.id - 1].stock_quantity);
-		const price = parseFloat(productArray[purchase.id - 1].price).toFixed(2);
-		//console.log('buying', itemToPurchase, 'max is', maxQuantity);
+		idToPurchase = purchase.id;
+		itemToPurchase = productArray[purchase.id - 1].product_name;
+		maxQuantity = parseInt(productArray[purchase.id - 1].stock_quantity);
+		price = parseFloat(productArray[purchase.id - 1].price).toFixed(2);
 		inquirer.prompt([{
 			name: 'quantity',
 			type: 'input',
@@ -76,11 +71,29 @@ function promptToBuyProduct() {
 			}
 		}]).then( (purchase) => {
 			const salesTotal = parseInt(purchase.quantity) * price;
-			console.log(`Ok, purchasing ${purchase.quantity} of ${itemToPurchase} for $ ${salesTotal}.`);
+			quantity = purchase.quantity;
+			console.log(`Ok, purchasing ${quantity} of ${itemToPurchase} for $ ${salesTotal}.`);
+			purchaseItem(idToPurchase, quantity);
 		});
 	});
 }
 
-function numWholeDigits(x) {
-	return (Math.log10((x ^ (x >> 31)) - (x >> 31)) | 0) + 1;
-  }
+function buyProductFromDB() {
+	connection.query(query, function(err, res, fields) {  
+        if (err) throw err;
+		else if (res.length > 0) {
+		}
+        else console.log('No response.');
+	});
+}
+
+function purchaseItem(productId, purchaseQuantity) {
+	let query = connection.query(
+		"UPDATE products SET ? WHERE ?",
+		[{ stock_quantity: purchaseQuantity }, { id: productId }],
+		function(err, res) {
+			console.log(res.affectedRows + " products updated!\n");
+		});
+	console.log(query.sql);
+	disconnectDB();
+}
