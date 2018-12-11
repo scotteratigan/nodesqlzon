@@ -15,7 +15,7 @@ const currencyDollarFormatter = new Intl.NumberFormat('en-US', {
 	currency: 'USD',
 	minimumFractionDigits: 2
   });
-let productList = [];
+let productArray = [];
 
 displayProducts();
 
@@ -32,7 +32,6 @@ function disconnectDB() {
 
 function displayProducts() {
 	connectToDB();
-	let productArray = [];
 	console.log('*** Welcome to NodeSQLzon! ***');
     connection.query(query, function(err, res, fields) {  
         if (err) throw err;
@@ -41,37 +40,44 @@ function displayProducts() {
 			console.log('got products...');
 			var productTable = new Table;
 			productArray.forEach( (product) => {
-				productTable.cell('Product Id', product.id);
+				productTable.cell('Id', product.id, Table.number(0));
 				productTable.cell('Description', product.product_name);
 				productTable.cell('Price, $', product.price, Table.number(2));
 				productTable.newRow();
 			});
 			console.log(productTable.toString());
+			promptToBuyProduct();
 		}
         else console.log('Sold out of all items! Please come back soon.');
 	});
 	disconnectDB();
 }
 
-async function buyProduct() {
+function promptToBuyProduct() {
 	inquirer.prompt([{
-		name: 'dbAction',
-		type: 'list',
-		choices: [],
-		message: 'What action would you like to perform?'
-	}]).then(answers => {
-		if (answers.dbAction === 'Search by Artist') {
-			searchArtist();
+		name: 'id',
+		type: 'input',
+		message: 'Which product would you like to buy?',
+		validate: (itemId) => {
+			return (!isNaN(itemId) && itemId > 0 && itemId <= productArray.length); // todo: ensure number is in range.
 		}
-		else if (answers.dbAction === 'Search by Song') {
-			searchSong();
-		}
-		else if (answers.dbAction === 'Artists that appear more than once') {
-			searchMultiHits();
-		}
-		else if (answers.dbAction === 'Search all data in range') {
-			searchRange();
-		}
+	}]).then( (purchase) => {
+		//console.log('Purchasing', purchase.id);
+		const itemToPurchase = productArray[purchase.id - 1].product_name;
+		const maxQuantity = parseInt(productArray[purchase.id - 1].stock_quantity);
+		const price = parseFloat(productArray[purchase.id - 1].price).toFixed(2);
+		//console.log('buying', itemToPurchase, 'max is', maxQuantity);
+		inquirer.prompt([{
+			name: 'quantity',
+			type: 'input',
+			message: 'How many would you like to buy',
+			validate: (quantity) => {
+				return (!isNaN(quantity) && quantity > 0 && quantity <= maxQuantity); // todo: ensure number is in range.
+			}
+		}]).then( (purchase) => {
+			const salesTotal = parseInt(purchase.quantity) * price;
+			console.log(`Ok, purchasing ${purchase.quantity} of ${itemToPurchase} for $ ${salesTotal}.`);
+		});
 	});
 }
 

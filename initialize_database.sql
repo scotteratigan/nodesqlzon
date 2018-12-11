@@ -21,7 +21,7 @@ INSERT INTO products (product_name, department_name, price, stock_quantity) VALU
 ("HTML5 Comes Alive (Semantics)", "front end", 15.15, 38),
 ("NodeJS Basic Nodules Class", "back end", 52.99, 11),
 ("Finally - An Await/Async Class ('It's great, I promise!')", "full stack", 75.75, 22),
-("Lazy Loading for Idle Individuals", "front end", 15.25, 53),
+("Lazy Loading for Idle Individuals", "front end", 5.25, 53),
 ("SEO Optimization for Search Engines Class", "front end", 23.12, 47),
 ("Angular From a New Angle Class (Barebone Basics)", "full stack", 99.99, 10);
 
