@@ -202,6 +202,7 @@ async function removeProduct() {
 			}]);
 			await connection.query('DELETE FROM products WHERE id = ?', [selection.id]);
 			console.log(`Product ${selection.id} removed.`);
+			await displayProducts();
 			return resolve();
 		}
 		catch (error) {
