@@ -1,49 +1,42 @@
+require('dotenv').config(); // Set a value of DB_PASS=yourpassword
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const Table = require('easy-table');
-
 const LOWSTOCKWARNING = 5;
 
 const connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
     user: "root",
-    password: "hunter2!",
+    password: process.env.DB_PASS,
     database: "bamazon"
 });
 let productArray = [];
 
 console.clear();
-connectToDB();
-promptManagerFunction();
+// Initiate a connection to the DB
+connection.connect( err => {
+	if (err) {
+		console.error(err);
+	}
+	connectedToDB = true;
+});
+// Call the recursive inquirer function:
+promptManagerSelection();
 
-function connectToDB() {
-	return new Promise( async (resolve, reject) => {
-		try {
-			await connection.connect();
-			return resolve();
-		}
-		catch(err) {
-			console.error(err);
-			return reject();
-		}
-	});
-}
-
-async function promptManagerFunction() {
-	//await connectToDB();
-	let managerChoice = await inquirer.prompt([{
+async function promptManagerSelection() {
+	const managerChoice = await inquirer.prompt([{
 		name: 'action',
 		type: 'list',
 		message: 'What would you like to do?',
 		choices: ['View Products for Sale', 'View Products by Department', 'View Products by Inventory (ascending)', 'View Products by Inventory (descending)', 'View Low Inventory', 'Add to Inventory', 'Add New Product', 'Remove Product', 'Quit']
 	}]);
 	await performSelectedAction(managerChoice.action);
-	promptManagerFunction(); // Calls itself recursively forever unless 'Quit' is selected in performSelectedAction
+	promptManagerSelection(); // Calls itself recursively forever unless 'Quit' is selected in performSelectedAction
 }
 
-async function performSelectedAction(managerFunction) {
-	switch (managerFunction) {
+async function performSelectedAction(managerSelection) {
+	switch (managerSelection) {
 		case 'View Products for Sale':
 			await displayProducts().catch((err) => console.error(err));
 			break;
@@ -70,15 +63,14 @@ async function performSelectedAction(managerFunction) {
 			break;
 		case 'Quit':
 			connection.end();
-			return console.log('Quitting...');
+			console.log('Thanks for using nodeSQLzon!');
 			process.exit(0);
 			break;
 		default:
-			console.error(`Error, selection of ${managerFunction} is not valid.`);
+			console.error(`Error, selection of ${managerSelection} is not valid.`);
 			process.exit(1);
 			break;
 	};
-	// promptManagerFunction();
 }
 
 async function addToInventory() {
@@ -148,11 +140,9 @@ async function addNewProduct() {
 	console.log('Dept:', newProduct.department_name);
 	console.log('price:', newProduct.price);
 	console.log('stock:', newProduct.stock_quantity);
-	
-	// syntax for the following was tricky...
-	await connection.query('INSERT INTO products (product_name, department_name, price, stock_quantity, sold_quantity, sales_total) VALUES (?, ?, ?, ?, ?, ?)', 
+	connection.query('INSERT INTO products (product_name, department_name, price, stock_quantity, sold_quantity, sales_total) VALUES (?, ?, ?, ?, ?, ?)', 
 	[newProduct.product_name, newProduct.department_name, newProduct.price, newProduct.stock_quantity, 0, 0.00],
-	function(err, res) {
+	(err, res) => {
 		if (err) console.error(err);
 	});
 	await displayProducts();
@@ -160,6 +150,7 @@ async function addNewProduct() {
 }
 
 async function displayProducts(queryString = 'SELECT * FROM products') {
+	console.log(connection.state);
 	return new Promise(async (resolve, reject) => {
 		let res = await getProductsFromDB(queryString).catch((err) => {console.error(err)});
 		console.clear();
@@ -179,20 +170,21 @@ async function displayProducts(queryString = 'SELECT * FROM products') {
 		else {
 			console.log('No products meet the specified display criteria.\n\n');
 		}
-		
 		return resolve();
 	});
 }
 
-function getProductsFromDB(queryString) {
+async function getProductsFromDB(queryString) {
 	return new Promise( (resolve, reject) => {
 		connection.query(queryString, function(err, res, fields) {
-			//connection.end();
-			if (err) throw err;
+			if (err) {
+				console.error(err);
+				return reject();
+			}
 			else if (res.length > 0) {
 				return resolve(res);
 			}
-			else return reject([]);
+			else return reject();
 		});
 	});
 }
@@ -200,16 +192,22 @@ function getProductsFromDB(queryString) {
 async function removeProduct() {
 	return new Promise ( async (resolve, reject) => {
 		await displayProducts();
-		let selection = await inquirer.prompt([{
-			name: 'id',
-			type: 'input',
-			message: 'Which product would you like to remove?',
-			validate: (itemId) => {
-				return (!isNaN(itemId) && itemId > 0);
-			}
-		}]);
-		await connection.query('DELETE FROM products WHERE id = ?', [selection.id]);
-		console.log(`Product ${selection.id} removed.`);
-		return resolve();
-	}) // end of promise
+		try {
+			let selection = await inquirer.prompt([{
+				name: 'id',
+				type: 'input',
+				message: 'Which product would you like to remove?',
+				validate: (itemId) => {
+					return (!isNaN(itemId) && itemId > 0);
+				}
+			}]);
+			await connection.query('DELETE FROM products WHERE id = ?', [selection.id]);
+			console.log(`Product ${selection.id} removed.`);
+			return resolve();
+		}
+		catch (error) {
+			console.error(error);
+			return reject();
+		}
+	});
 }
