@@ -12,21 +12,15 @@ const connection = mysql.createConnection({
 });
 let productArray = [];
 
+console.clear();
+// Initiate a connection to the DB
+connection.connect( err => {
+	if (err) {
+		console.error(err);
+	}
+	console.log(`*** Welcome to nodeSQLzon, you are customer number ${connection.threadId} ***`);
+});
 displayProducts(); // displays products, prompts to buy product, disconnects. Essentially initiates everything.
-
-async function connectToDB() {
-	return new Promise( (resolve, reject) => {
-		try {
-			connection.connect();
-			console.log(`*** Welcome to nodeSQLzon, you are customer number ${connection.threadId} ***`);
-			return resolve();
-		}
-		catch(err) {
-			console.error(err);
-			return reject();
-		}
-	});
-}
 
 function disconnectDB() {
 	connection.end();
@@ -34,7 +28,6 @@ function disconnectDB() {
 }
 
 async function displayProducts() {
-	await connectToDB();
     connection.query('SELECT * FROM products', (err, res, fields) => {  
         if (err) throw err;
 		else if (res.length > 0) {

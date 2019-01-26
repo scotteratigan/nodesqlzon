@@ -19,7 +19,6 @@ connection.connect( err => {
 	if (err) {
 		console.error(err);
 	}
-	connectedToDB = true;
 });
 // Call the recursive inquirer function:
 promptManagerSelection();
